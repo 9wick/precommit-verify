@@ -1,0 +1,32 @@
+{
+  "name": "precommit-check",
+  "version": "0.0.0",
+  "description": "Pre-commit hook helper that records and verifies repository state via blake3 hash.",
+  "homepage": "https://github.com/9wick/precommit-check",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/9wick/precommit-check.git"
+  },
+  "license": "MIT",
+  "author": "KoheiKido <kido@9wick.com>",
+  "type": "module",
+  "bin": {
+    "precommit-check": "lib/index.js"
+  },
+  "files": [
+    "lib",
+    "binaries"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "linux",
+    "darwin",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
+}

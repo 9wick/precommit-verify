@@ -13,11 +13,29 @@ Wired into Git hooks (via [lefthook](https://github.com/evilmartians/lefthook) o
 
 ## Install
 
+### npm (TypeScript / Node projects)
+
+```sh
+npm install --save-dev precommit-check
+# or
+npx precommit-check --help
+```
+
+The npm package bundles pre-built binaries for Linux (x64, arm64), macOS (x64, arm64), and Windows (x64). Linux binaries are built against glibc 2.35; older distros (Debian 11, CentOS 7/8, Alpine) are not supported in this release.
+
+### Cargo (Rust users)
+
 ```sh
 cargo install --locked precommit-check
 ```
 
-> An npm wrapper (`npx precommit-check`) is planned in a follow-up release.
+### Pre-built binaries
+
+Download from [Releases](https://github.com/9wick/precommit-check/releases) — `.tar.gz` for Linux/macOS, `.zip` for Windows.
+
+### MSRV
+
+Built with Rust 1.85. The MSRV is bumped when a dependency requires it; we do not chase stable for its own sake.
 
 ## Quickstart
 
