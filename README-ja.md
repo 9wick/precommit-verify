@@ -4,9 +4,12 @@
 
 [English README](./README.md)
 
-Git リポジトリの「検証済みの状態」をハッシュファイルとして記録し、コミット時に再検証してコミットメッセージに `Verified:` フッターを追記する小さな Rust 製 CLI。[lefthook](https://github.com/evilmartians/lefthook) などの Git hooks runner と組み合わせて使う。
+AI / エージェントが commit を打つワークフローのプロジェクト向けの小さな Rust CLI。「チェックを走らせずに commit する」ことを **やりにくくし**、かつ **後から簡単に見抜けるようにする** ためのツール。
 
-ねらい: 重いチェック（lint / build / test）は **一度だけ**走らせ、その時点のハッシュを保存しておく。以降のコミットでは、そのハッシュと現在の状態を照合するだけで「あれから何も変わっていない」ことを高速に確認できる（untracked ファイルも対象）。チェックとコミットの間で何かを変更すれば footer が ✕ に切り替わり、レビュアーがそれを認識できる。
+Git hook（[lefthook](https://github.com/evilmartians/lefthook) 等）に組み込むと、以下の 2 つを行う：
+
+1. **commit をブロック**: 重いチェック（lint / build / test）が「コミット対象のツリーに対して」実際に走っていない限り、commit を通さない。
+2. **コミットメッセージに刻印**: すべての commit メッセージに `Verified: precommit-check ✓ / △ / ✕` という footer を追記。仮に pre-commit hook を bypass されても（`git commit --no-verify`、トリックを知っているエージェント等）、prepare-commit-msg hook の方は走るので footer は書き込まれる — チェックを通していなければ `✕` で残る。bypass された commit は `git log` やコードレビューで一目でわかる。
 
 ## インストール
 
@@ -18,7 +21,7 @@ cargo install --locked precommit-check
 
 ## クイックスタート
 
-`package.json` に「実チェック → save」をまとめたスクリプトを追加：
+`package.json` に「実チェック → 検証済み状態の記録」をまとめたスクリプトを追加：
 
 ```jsonc
 // package.json
@@ -46,57 +49,78 @@ prepare-commit-msg:
 
 ワークフロー：
 
-1. 何か意味のある変更を加えた後に `pnpm precommit-check` を実行。重いチェックを走らせ、最後にリポジトリのハッシュを `.git/precommit-check-hash` に保存。
-2. `git commit` で pre-commit hook が起動し、`precommit-check check` が走る。これは高速 — 単に working tree を再ハッシュして比較するだけ。
-3. prepare-commit-msg hook が `Verified: precommit-check ✓ (16桁hash)` のような footer を追記し、コミットメッセージにどの状態を検証したかが残る。
+1. 何か意味のある変更を加えた後に `pnpm precommit-check` を実行。重いチェックを走らせ、成功したら「このツリーは検証済み」という状態を記録。
+2. `git commit` で pre-commit hook が起動。記録された状態とコミット対象のツリーが一致しなければ commit を **ブロック**（チェック自体は再実行しないので高速）。
+3. prepare-commit-msg hook が `Verified: precommit-check ✓ / △ / ✕` を commit メッセージに追記し、commit 時点で「実際に何が検証されたか」を残す。
 
-最後の `save` 以降に何かを編集していれば check が落ちて commit がブロックされる。check は通ったが unstaged 変更がある場合は footer が ` △` になる（staged + working state は検証済みだが、working tree が index から drift しているという soft warning）。
+bypass について: `git commit --no-verify` は手順 2 を skip するが、prepare-commit-msg hook は **skip されない**。結果として footer は書き込まれ — チェックを通していなければ `✕` として残り — bypass された commit は `git log` で明白になる。
 
 ## サブコマンド
 
 | コマンド | 動作 |
 |---|---|
-| `precommit-check save` | リポジトリのハッシュを計算し、`.git/precommit-check-hash` に書き込む。**パッケージマネージャ経由のスクリプトから呼ばれる必要あり**（npm/pnpm/yarn/bun）。直接呼び出しは拒否、ワークフローの明示性を担保するため。 |
-| `precommit-check check` | ハッシュを再計算し、保存済みのものと比較。不一致または保存ファイルがなければ exit 1。 |
-| `precommit-check compute` | 現在のハッシュを stdout に出力。デバッグやスクリプト用。 |
+| `precommit-check save` | 現在のツリーが「検証済み」であることを記録する。**パッケージマネージャ経由のスクリプトから呼ばれる必要あり**（npm/pnpm/yarn/bun）。直接呼び出しは拒否、ワークフローの明示性を担保するため。 |
+| `precommit-check check` | コミット対象のツリーが、最後に記録された検証済み状態と一致するか確認。不一致または記録なしなら exit 1。 |
 | `precommit-check verify-footer <msg-file> [source]` | コミットメッセージファイルに `Verified: precommit-check ...` フッターを追記（既存があれば置換）。`source` が `merge` か `squash` のときは何もしない。 |
+| `precommit-check compute` | 現在のツリーの内部 fingerprint を stdout に出力。デバッグ用 — 通常利用では不要。 |
 
 ### Footer の状態
 
 | マーカー | 意味 |
 |---|---|
-| ✓ | ハッシュ一致、working tree もクリーン。 |
-| △ | ハッシュ一致だが unstaged 編集あり（staged commit は検証済み、working tree が drift）。 |
-| ✕ | ハッシュ未保存、または現状と不一致。 |
+| ✓ | このツリーに対してチェックが通った状態。それ以降に変更なし。 |
+| △ | チェックは通ったツリーだが、その後 working tree が drift している（典型: 最後の `precommit-check` 実行後に編集して再検証していない状態）。 |
+| ✕ | チェック実行の記録なし、またはチェック後にツリーが変わっている。**未検証として扱うこと。** |
 
-## ハッシュ計算の仕組み
+## 何が「変更」とみなされるか
 
-- 入力: `git -c core.quotepath=false ls-files -z -c -o --exclude-standard`（tracked + untracked、NUL 区切りで改行や非 UTF-8 を含むパスにも対応）。
-- `.md` で終わるファイルは除外（ドキュメントの churn で検証状態が無効化されないように）。
-- ファイルをバイト順で sort し、各ファイルについて `<filename> \0 <file content> \0` を [blake3](https://github.com/BLAKE3-team/BLAKE3) に流し込んで単一ダイジェストを得る。NUL delimiter で `(filename, content)` の境界を明示し、バイト境界がずれただけで衝突するケースを防ぐ。
-- open に失敗するファイル（broken symlink、permission denied 等）は静かに skip。
-- ハッシュファイルのパスは `git rev-parse --git-path precommit-check-hash` で解決するので、[worktree](https://git-scm.com/docs/git-worktree) や submodule でも適切な場所に保存される。
+このツールは Git が working tree から見えるすべてのファイルを監視する：
+
+- tracked ファイル全部
+- untracked ファイル全部
+
+以下は変更とみなされない：
+
+- `.gitignore`（および `.git/info/exclude`、global gitignore、`core.excludesFile` 等）でマッチするファイル
+- Markdown ファイル（`.md`） — ドキュメント編集は lint / build / test の結果に影響しないので、検証状態を無効化しない
+- open に失敗するファイル（broken symlink、permission denied 等） — エラー扱いせず静かに無視
+
+### 監視対象のカスタマイズ
+
+現時点では非対応。上記のリストはハードコード。
+
+- 追加で除外したいパターン（snapshot、generated code 等）
+- `.md` を除外したくない
+
+といった要望があれば issue を立ててもらえると嬉しい。設定ファイルを足すのは候補として考えているが、誰かが必要としていない時点で config 面を増やしても無駄なので未実装。
 
 ## FAQ
 
-**`save` を直接実行するとなぜ拒否されるのか？**
-重いチェックを通さずにハッシュが更新されるのを防ぐため。「チェックを走らせるスクリプトと同じ場所で save を呼ぶ」という意図を、パッケージマネージャがセットする `npm_lifecycle_event` / `npm_execpath` 環境変数の存在で担保している。
+**`precommit-check save` が "save must be called via a package manager script" で失敗する**
+
+`save` は直接実行を意図的に拒否する仕様。検証済み状態が実チェックと一緒にしか更新されないようにするため。`package.json` のスクリプト経由（あるいは利用しているパッケージマネージャの相当物）で呼ぶこと：
+
+```jsonc
+{ "scripts": { "precommit-check": "pnpm test && precommit-check save" } }
+```
+
+その上で `pnpm precommit-check` を実行する（`precommit-check save` を直叩きしない）。
 
 **Git worktree でも動く？**
-動く — ハッシュファイルは worktree ごとに保存される（`.git/worktrees/<name>/precommit-check-hash`）。各 worktree が独立した状態を持つ。
 
-**なぜ blake3 で SHA-256 ではない？**
-パフォーマンス。バイナリ全体が commit のたびに 30ms 以下で起動 → 完了する必要があり、blake3 の SIMD 実装は SHA-256 を余裕で上回る。hex digest は同じ 64 文字なので footer 表示は変わらない。
+動く。検証済み状態は worktree ごとに独立して管理されるので、片方の worktree で `save` してももう片方の commit には影響しない。
 
-## prepush-hash からの移行
+**README を編集した。`save` を再実行しないとダメ？**
 
-この CLI は元々 [`@9wick/eslint-plugin-strict-type-rules`](https://github.com/9wick/eslint-strict-type-rules) パッケージの中に `prepush-hash` として同居していたもの。独立リポジトリに切り出し、Rust で書き直し、実際のライフサイクル（pre-push ではなく pre-commit）に合わせて改名した。
+不要。Markdown（`.md`）は変更とみなされないので、編集しても lint / build / test の結果には影響せず、検証状態も無効化されない。
 
-差分：
+**`git commit --amend` するとどうなる？**
 
-- ハッシュファイル: `.git/prepush-hash` → `.git/precommit-check-hash`（旧ファイルは無視されるので削除して構わない）
-- footer 文言: `Verified: prepush ...` → `Verified: precommit-check ...`（過去の commit に残った旧 footer はそのまま、新規 commit から新 prefix に切り替わる）
-- ハッシュアルゴリズム: SHA-256 → blake3。旧ツールのハッシュとは互換性なし。アップグレード後に一度 `save` を走らせること。
+既存の `Verified: precommit-check ...` 行は重複追加ではなく **置換** される。なので amend 時に `save` を走らせなければ、現在の working tree の状態が footer に反映される。
+
+**merge commit や squash commit ではどうなる？**
+
+`verify-footer` は何もしない。これらのコミットメッセージは Git の merge / squash フローが自動生成するもので、利用者が編集したものではないため。
 
 ## License
 
