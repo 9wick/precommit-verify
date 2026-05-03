@@ -1,4 +1,4 @@
-//! Integration tests for the precommit-check CLI.
+//! Integration tests for the precommit-verify CLI.
 //!
 //! All scenarios spawn the real binary inside a real `git init`-ed tempdir so
 //! we exercise the full path: subprocess startup, argv parsing, git
@@ -48,24 +48,24 @@ fn git_in(cwd: &Path, args: &[&str]) -> Output {
 }
 
 fn run(args: &[&str], cwd: &Path) -> Output {
-    let mut cmd = Command::cargo_bin("precommit-check").expect("cargo_bin");
+    let mut cmd = Command::cargo_bin("precommit-verify").expect("cargo_bin");
     cmd.args(args)
         .current_dir(cwd)
-        .env("npm_lifecycle_event", "precommit-check");
+        .env("npm_lifecycle_event", "precommit-verify");
     isolate_git(&mut cmd)
         .output()
-        .expect("spawn precommit-check")
+        .expect("spawn precommit-verify")
 }
 
 fn run_without_pkg_manager(args: &[&str], cwd: &Path) -> Output {
-    let mut cmd = Command::cargo_bin("precommit-check").expect("cargo_bin");
+    let mut cmd = Command::cargo_bin("precommit-verify").expect("cargo_bin");
     cmd.args(args)
         .current_dir(cwd)
         .env_remove("npm_lifecycle_event")
         .env_remove("npm_execpath");
     isolate_git(&mut cmd)
         .output()
-        .expect("spawn precommit-check")
+        .expect("spawn precommit-verify")
 }
 
 fn assert_ok(out: &Output) {
@@ -252,7 +252,7 @@ fn save_creates_hash_file_in_git_dir() {
     fs::write(dir.path().join("a.ts"), "const a = 1;\n").unwrap();
     git_in(dir.path(), &["add", "a.ts"]);
     assert_ok(&run(&["save"], dir.path()));
-    let hash_path = dir.path().join(".git/precommit-check-hash");
+    let hash_path = dir.path().join(".git/precommit-verify-hash");
     let content = fs::read_to_string(hash_path).expect("hash file exists");
     assert_eq!(content.trim().len(), 64);
 }
@@ -263,7 +263,7 @@ fn save_writes_hash_matching_compute() {
     fs::write(dir.path().join("a.ts"), "const a = 1;\n").unwrap();
     git_in(dir.path(), &["add", "a.ts"]);
     assert_ok(&run(&["save"], dir.path()));
-    let saved = fs::read_to_string(dir.path().join(".git/precommit-check-hash"))
+    let saved = fs::read_to_string(dir.path().join(".git/precommit-verify-hash"))
         .unwrap()
         .trim()
         .to_string();
@@ -335,7 +335,7 @@ fn verify_footer_appends_check_when_hash_matches() {
 
     let result = fs::read_to_string(&msg).unwrap();
     assert!(
-        result.contains("Verified: precommit-check \u{2713}"),
+        result.contains("Verified: precommit-verify \u{2713}"),
         "got: {result}"
     );
     assert!(result.contains("feat: add feature"));
@@ -343,7 +343,7 @@ fn verify_footer_appends_check_when_hash_matches() {
     assert!(
         result
             .lines()
-            .any(|l| l.starts_with("Verified: precommit-check \u{2713} (") && l.ends_with(')')),
+            .any(|l| l.starts_with("Verified: precommit-verify \u{2713} (") && l.ends_with(')')),
         "footer should have hash in parens; got: {result}"
     );
 }
@@ -359,7 +359,7 @@ fn verify_footer_appends_cross_when_no_hash() {
 
     let result = fs::read_to_string(&msg).unwrap();
     assert!(
-        result.contains("Verified: precommit-check \u{2715}"),
+        result.contains("Verified: precommit-verify \u{2715}"),
         "got: {result}"
     );
 }
@@ -378,7 +378,7 @@ fn verify_footer_appends_cross_when_hash_mismatches() {
 
     let result = fs::read_to_string(&msg).unwrap();
     assert!(
-        result.contains("Verified: precommit-check \u{2715}"),
+        result.contains("Verified: precommit-verify \u{2715}"),
         "got: {result}"
     );
     assert!(!result.contains('\u{2713}'));
@@ -400,7 +400,7 @@ fn verify_footer_appends_triangle_when_unstaged_changes_exist() {
 
     let result = fs::read_to_string(&msg).unwrap();
     assert!(
-        result.contains("Verified: precommit-check \u{25b3}"),
+        result.contains("Verified: precommit-verify \u{25b3}"),
         "got: {result}"
     );
     assert!(!result.contains('\u{2713}'));
@@ -416,13 +416,13 @@ fn verify_footer_replaces_existing_on_amend() {
 
     let msg = write_msg(
         dir.path(),
-        "feat: x\n\nVerified: precommit-check \u{2713} (abcdef0123456789)\n",
+        "feat: x\n\nVerified: precommit-verify \u{2713} (abcdef0123456789)\n",
     );
     assert_ok(&run(&["verify-footer", msg.to_str().unwrap()], dir.path()));
 
     let result = fs::read_to_string(&msg).unwrap();
     assert_eq!(
-        result.matches("Verified: precommit-check").count(),
+        result.matches("Verified: precommit-verify").count(),
         1,
         "expected exactly one Verified line; got: {result}"
     );
@@ -510,8 +510,8 @@ fn save_works_inside_a_worktree() {
     );
     let wt_subdir = entries.into_iter().next().unwrap().unwrap().path();
     assert!(
-        wt_subdir.join("precommit-check-hash").exists(),
-        "expected precommit-check-hash inside per-worktree git dir, got: {:?}",
+        wt_subdir.join("precommit-verify-hash").exists(),
+        "expected precommit-verify-hash inside per-worktree git dir, got: {:?}",
         fs::read_dir(&wt_subdir).unwrap().collect::<Vec<_>>()
     );
 

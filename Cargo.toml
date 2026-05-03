@@ -1,5 +1,5 @@
 [package]
-name = "precommit-check"
+name = "precommit-verify"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
@@ -13,7 +13,7 @@ keywords = ["git", "pre-commit", "hook", "cli", "lefthook"]
 categories = ["command-line-utilities", "development-tools"]
 
 [[bin]]
-name = "precommit-check"
+name = "precommit-verify"
 path = "src/main.rs"
 
 [dependencies]
