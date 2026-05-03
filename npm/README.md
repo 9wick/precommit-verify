@@ -1,13 +1,13 @@
-# precommit-check
+# precommit-verify
 
 See https://github.com/9wick/precommit-check for full documentation.
 
 ## Install
 
 ```bash
-npm install --save-dev precommit-check
+npm install --save-dev precommit-verify
 # or
-npx precommit-check --help
+npx precommit-verify --help
 ```
 
 Supports Linux (x64, arm64), macOS (x64, arm64), Windows (x64).

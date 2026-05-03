@@ -28,7 +28,7 @@ pub fn ensure_git_repo() -> Result<()> {
 /// the correct location inside worktrees and submodules where `.git` is a
 /// pointer file rather than a directory.
 pub fn hash_file_path() -> Result<PathBuf> {
-    let out = run_git(&["rev-parse", "--git-path", "precommit-check-hash"])?;
+    let out = run_git(&["rev-parse", "--git-path", "precommit-verify-hash"])?;
     if !out.status.success() {
         let stderr = String::from_utf8_lossy(&out.stderr);
         return Err(anyhow!("git rev-parse failed: {}", stderr.trim()));

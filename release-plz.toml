@@ -3,7 +3,7 @@ git_release_enable = false
 git_tag_enable = false
 
 [[package]]
-name = "precommit-check"
+name = "precommit-verify"
 git_tag_name = "v{{ version }}"
 git_tag_enable = true
 git_release_enable = true

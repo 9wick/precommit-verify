@@ -14,7 +14,7 @@ mod git;
 mod hash;
 
 #[derive(Parser)]
-#[command(name = "precommit-check", version, about)]
+#[command(name = "precommit-verify", version, about)]
 struct Cli {
     #[command(subcommand)]
     command: Cmd,
@@ -22,7 +22,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    /// Compute and save the repository hash to .git/precommit-check-hash
+    /// Compute and save the repository hash to .git/precommit-verify-hash
     Save,
     /// Verify the saved hash matches the current repository state
     Check,
@@ -48,7 +48,7 @@ fn main() -> ExitCode {
     match result {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("precommit-check: {e}");
+            eprintln!("precommit-verify: {e}");
             ExitCode::FAILURE
         }
     }
@@ -59,14 +59,14 @@ fn save() -> Result<()> {
         && std::env::var_os("npm_execpath").is_none()
     {
         bail!(
-            "save must be called via a package manager script (e.g., 'pnpm precommit-check save')"
+            "save must be called via a package manager script (e.g., 'pnpm precommit-verify save')"
         );
     }
     git::ensure_git_repo()?;
     let hex = hash::compute_hash()?;
     let path = git::hash_file_path()?;
     fs::write(&path, format!("{hex}\n"))?;
-    println!("precommit-check: saved {}", short16(&hex));
+    println!("precommit-verify: saved {}", short16(&hex));
     Ok(())
 }
 
@@ -75,19 +75,22 @@ fn check() -> Result<()> {
     let path = git::hash_file_path()?;
     if !path.exists() {
         bail!(
-            "hash not found. Run 'pnpm precommit-check save' (or your package manager equivalent) first."
+            "hash not found. Run 'pnpm precommit-verify save' (or your package manager equivalent) first."
         );
     }
     let saved = fs::read_to_string(&path)?.trim().to_string();
     let current = hash::compute_hash()?;
     if saved != current {
         bail!(
-            "files changed since last save (saved {}, current {}). Run 'pnpm precommit-check save' to update.",
+            "files changed since last save (saved {}, current {}). Run 'pnpm precommit-verify save' to update.",
             short16(&saved),
             short16(&current),
         );
     }
-    println!("precommit-check: verified \u{2713} ({})", short16(&current));
+    println!(
+        "precommit-verify: verified \u{2713} ({})",
+        short16(&current)
+    );
     Ok(())
 }
 

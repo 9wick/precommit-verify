@@ -4,7 +4,7 @@
 //! covered by unit tests. The CLI layer (main.rs) wires them to file I/O and
 //! `git`-derived state.
 
-const FOOTER_PREFIX: &str = "Verified: precommit-check";
+const FOOTER_PREFIX: &str = "Verified: precommit-verify";
 
 pub enum VerifyStatus {
     /// Hash matches; `has_unstaged` distinguishes ✓ from △.
@@ -36,7 +36,7 @@ pub fn build_footer(status: &VerifyStatus) -> String {
     }
 }
 
-/// Remove every line that starts with the precommit-check footer prefix.
+/// Remove every line that starts with the precommit-verify footer prefix.
 ///
 /// Implementation note: row-based filter; intentionally avoids the `regex`
 /// crate to keep startup cost down (this binary runs on every commit).
@@ -74,7 +74,7 @@ mod tests {
         };
         assert_eq!(
             build_footer(&s),
-            "Verified: precommit-check \u{2713} (abcdef0123456789)"
+            "Verified: precommit-verify \u{2713} (abcdef0123456789)"
         );
     }
 
@@ -86,7 +86,7 @@ mod tests {
         };
         assert_eq!(
             build_footer(&s),
-            "Verified: precommit-check \u{25b3} (abcdef0123456789)"
+            "Verified: precommit-verify \u{25b3} (abcdef0123456789)"
         );
     }
 
@@ -94,7 +94,7 @@ mod tests {
     fn build_footer_stale() {
         assert_eq!(
             build_footer(&VerifyStatus::Stale),
-            "Verified: precommit-check \u{2715}"
+            "Verified: precommit-verify \u{2715}"
         );
     }
 
@@ -102,7 +102,7 @@ mod tests {
     fn build_footer_unverified() {
         assert_eq!(
             build_footer(&VerifyStatus::Unverified),
-            "Verified: precommit-check \u{2715}"
+            "Verified: precommit-verify \u{2715}"
         );
     }
 
@@ -116,24 +116,24 @@ mod tests {
 
     #[test]
     fn strip_single_footer() {
-        let msg = "feat: add feature\n\nVerified: precommit-check \u{2713} (abcdef0123456789)";
+        let msg = "feat: add feature\n\nVerified: precommit-verify \u{2713} (abcdef0123456789)";
         assert_eq!(strip_existing_footer(msg), "feat: add feature\n");
     }
 
     #[test]
     fn strip_multiple_footers_amend_bug() {
         // Defensive: should clean up if past bug accidentally appended duplicates.
-        let msg = "feat: x\n\nVerified: precommit-check \u{2713} (aaa)\nVerified: precommit-check \u{2715}\n";
+        let msg = "feat: x\n\nVerified: precommit-verify \u{2713} (aaa)\nVerified: precommit-verify \u{2715}\n";
         assert_eq!(strip_existing_footer(msg), "feat: x\n");
     }
 
     #[test]
     fn strip_keeps_lines_that_only_resemble_footer() {
         // Footer must be at line start; substrings inside body must remain.
-        let msg = "feat: x\nbody mentions Verified: precommit-check inline\n";
+        let msg = "feat: x\nbody mentions Verified: precommit-verify inline\n";
         assert_eq!(
             strip_existing_footer(msg),
-            "feat: x\nbody mentions Verified: precommit-check inline"
+            "feat: x\nbody mentions Verified: precommit-verify inline"
         );
     }
 
@@ -154,44 +154,44 @@ mod tests {
     fn embed_footer_trims_and_inserts_blank_line() {
         let result = embed_footer(
             "feat: add feature\n",
-            "Verified: precommit-check \u{2713} (h)",
+            "Verified: precommit-verify \u{2713} (h)",
         );
         assert_eq!(
             result,
-            "feat: add feature\n\nVerified: precommit-check \u{2713} (h)\n"
+            "feat: add feature\n\nVerified: precommit-verify \u{2713} (h)\n"
         );
     }
 
     #[test]
     fn embed_footer_handles_no_trailing_newline() {
-        let result = embed_footer("feat: x", "Verified: precommit-check \u{2715}");
-        assert_eq!(result, "feat: x\n\nVerified: precommit-check \u{2715}\n");
+        let result = embed_footer("feat: x", "Verified: precommit-verify \u{2715}");
+        assert_eq!(result, "feat: x\n\nVerified: precommit-verify \u{2715}\n");
     }
 
     #[test]
     fn embed_footer_handles_multiple_trailing_newlines() {
-        let result = embed_footer("feat: x\n\n\n", "Verified: precommit-check \u{2715}");
-        assert_eq!(result, "feat: x\n\nVerified: precommit-check \u{2715}\n");
+        let result = embed_footer("feat: x\n\n\n", "Verified: precommit-verify \u{2715}");
+        assert_eq!(result, "feat: x\n\nVerified: precommit-verify \u{2715}\n");
     }
 
     #[test]
     fn embed_footer_handles_crlf_msg() {
         // trim_end() strips CR+LF; rebuilt with LF only (Git canonical).
-        let result = embed_footer("feat: x\r\n\r\n", "Verified: precommit-check \u{2715}");
-        assert_eq!(result, "feat: x\n\nVerified: precommit-check \u{2715}\n");
+        let result = embed_footer("feat: x\r\n\r\n", "Verified: precommit-verify \u{2715}");
+        assert_eq!(result, "feat: x\n\nVerified: precommit-verify \u{2715}\n");
     }
 
     #[test]
     fn embed_footer_handles_empty_msg() {
-        let result = embed_footer("", "Verified: precommit-check \u{2715}");
-        assert_eq!(result, "Verified: precommit-check \u{2715}\n");
+        let result = embed_footer("", "Verified: precommit-verify \u{2715}");
+        assert_eq!(result, "Verified: precommit-verify \u{2715}\n");
     }
 
     // ─── round-trip (strip → embed) ──────────────────────────────────────
 
     #[test]
     fn round_trip_amend_replaces_old_footer() {
-        let original = "feat: x\n\nVerified: precommit-check \u{2713} (oldhash000000000)\n";
+        let original = "feat: x\n\nVerified: precommit-verify \u{2713} (oldhash000000000)\n";
         let stripped = strip_existing_footer(original);
         let new_footer = build_footer(&VerifyStatus::Verified {
             hash16: "newhash000000000".into(),
@@ -200,9 +200,9 @@ mod tests {
         let result = embed_footer(&stripped, &new_footer);
         assert_eq!(
             result,
-            "feat: x\n\nVerified: precommit-check \u{2713} (newhash000000000)\n"
+            "feat: x\n\nVerified: precommit-verify \u{2713} (newhash000000000)\n"
         );
         // Ensure no duplicate footer line.
-        assert_eq!(result.matches("Verified: precommit-check").count(), 1);
+        assert_eq!(result.matches("Verified: precommit-verify").count(), 1);
     }
 }
