@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4](https://github.com/9wick/precommit-verify/compare/v0.1.3...v0.1.4) - 2026-05-04
+
+### Other
+
+- fix description of △ footer state
+- ignore plans directory
+- update repository URLs after rename
+
 ## [0.1.3](https://github.com/9wick/precommit-check/compare/v0.1.2...v0.1.3) - 2026-05-04
 
 ### Other
