@@ -34,7 +34,7 @@ jobs:
       id-token: write
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
-      tag: ${{ steps.release.outputs.tag }}
+      tag: ${{ steps.extract.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,6 +46,11 @@ jobs:
           command: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - id: extract
+        if: steps.release.outputs.releases_created == 'true'
+        run: |
+          TAG=$(echo '${{ steps.release.outputs.releases }}' | jq -r '.[0].tag')
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build (${{ matrix.target }})
@@ -130,8 +135,6 @@ jobs:
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
-      - name: Upgrade npm for OIDC support
-        run: npm install -g npm@latest
       - uses: actions/download-artifact@v4
         with:
           pattern: binary-*
