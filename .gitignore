@@ -3,3 +3,4 @@ target/
 Cargo.lock.bak
 npm/binaries/
 npm/*.tgz
+plans/

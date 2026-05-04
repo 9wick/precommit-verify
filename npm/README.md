@@ -1,6 +1,6 @@
 # precommit-verify
 
-See https://github.com/9wick/precommit-check for full documentation.
+See https://github.com/9wick/precommit-verify for full documentation.
 
 ## Install
 

@@ -31,7 +31,7 @@ cargo install --locked precommit-verify
 
 ### Pre-built binaries
 
-Download from [Releases](https://github.com/9wick/precommit-check/releases) — `.tar.gz` for Linux/macOS, `.zip` for Windows.
+Download from [Releases](https://github.com/9wick/precommit-verify/releases) — `.tar.gz` for Linux/macOS, `.zip` for Windows.
 
 ### MSRV
 
@@ -87,7 +87,7 @@ Bypass story: `git commit --no-verify` skips step 2 but **does not** skip the pr
 | Marker | Meaning |
 |---|---|
 | ✓ | Checks passed on exactly this tree, no further edits since. |
-| △ | Checks passed on this tree, but the working tree has drifted since (typical: edits made after the last `precommit-verify` run, not yet re-verified). |
+| △ | Checks passed, but some changes are not staged — i.e., not all verified files will be included in this commit. |
 | ✕ | No record of checks running, or the tree changed since checks last passed. **Treat as unverified.** |
 
 ## What counts as a change
