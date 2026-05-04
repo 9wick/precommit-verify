@@ -31,7 +31,7 @@ cargo install --locked precommit-verify
 
 ### ビルド済み binary
 
-[Releases](https://github.com/9wick/precommit-check/releases) から直接ダウンロード可能（Linux/macOS は `.tar.gz`、Windows は `.zip`）。
+[Releases](https://github.com/9wick/precommit-verify/releases) から直接ダウンロード可能（Linux/macOS は `.tar.gz`、Windows は `.zip`）。
 
 ### MSRV
 

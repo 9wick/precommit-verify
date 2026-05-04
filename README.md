@@ -31,7 +31,7 @@ cargo install --locked precommit-verify
 
 ### Pre-built binaries
 
-Download from [Releases](https://github.com/9wick/precommit-check/releases) — `.tar.gz` for Linux/macOS, `.zip` for Windows.
+Download from [Releases](https://github.com/9wick/precommit-verify/releases) — `.tar.gz` for Linux/macOS, `.zip` for Windows.
 
 ### MSRV
 

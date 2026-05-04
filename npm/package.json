@@ -2,10 +2,10 @@
   "name": "precommit-verify",
   "version": "0.1.0",
   "description": "Pre-commit hook helper that records and verifies repository state via blake3 hash.",
-  "homepage": "https://github.com/9wick/precommit-check",
+  "homepage": "https://github.com/9wick/precommit-verify",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/9wick/precommit-check.git"
+    "url": "git+https://github.com/9wick/precommit-verify.git"
   },
   "license": "MIT",
   "author": "KoheiKido <kido@9wick.com>",
