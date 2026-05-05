@@ -59,7 +59,7 @@ fn save() -> Result<()> {
         && std::env::var_os("npm_execpath").is_none()
     {
         bail!(
-            "save must be called via a package manager script (e.g., 'pnpm precommit-verify save')"
+            "save must be called via a package.json script (e.g., 'pnpm run precommit')"
         );
     }
     git::ensure_git_repo()?;
@@ -75,14 +75,14 @@ fn check() -> Result<()> {
     let path = git::hash_file_path()?;
     if !path.exists() {
         bail!(
-            "hash not found. Run 'pnpm precommit-verify save' (or your package manager equivalent) first."
+            "hash not found. Run your package.json precommit script (e.g., 'pnpm run precommit') first."
         );
     }
     let saved = fs::read_to_string(&path)?.trim().to_string();
     let current = hash::compute_hash()?;
     if saved != current {
         bail!(
-            "files changed since last save (saved {}, current {}). Run 'pnpm precommit-verify save' to update.",
+            "files changed since last save (saved {}, current {}). Run your package.json precommit script to update.",
             short16(&saved),
             short16(&current),
         );
