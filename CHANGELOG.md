@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8](https://github.com/9wick/precommit-verify/compare/v0.1.7...v0.1.8) - 2026-05-05
+
+### Fixed
+
+- update test assertion for error message change
+- improve error messages to reference package.json scripts
+
 ## [0.1.7](https://github.com/9wick/precommit-verify/compare/v0.1.6...v0.1.7) - 2026-05-04
 
 ### Fixed
