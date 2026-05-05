@@ -58,9 +58,7 @@ fn save() -> Result<()> {
     if std::env::var_os("npm_lifecycle_event").is_none()
         && std::env::var_os("npm_execpath").is_none()
     {
-        bail!(
-            "save must be called via a package.json script (e.g., 'pnpm run precommit')"
-        );
+        bail!("save must be called via a package.json script (e.g., 'pnpm run precommit')");
     }
     git::ensure_git_repo()?;
     let hex = hash::compute_hash()?;
