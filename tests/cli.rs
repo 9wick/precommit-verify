@@ -279,7 +279,7 @@ fn save_rejects_when_not_via_package_manager() {
     fs::write(dir.path().join("a.ts"), "x").unwrap();
     git_in(dir.path(), &["add", "a.ts"]);
     let out = run_without_pkg_manager(&["save"], dir.path());
-    assert_fail_with(&out, "package manager script");
+    assert_fail_with(&out, "package.json script");
 }
 
 // ─── check ───────────────────────────────────────────────────────────────
